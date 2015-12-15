@@ -1,3 +1,4 @@
+// -*- compile-command: "gcc -std=c11 -Wall -pedantic repl.c mpc/mpc.c -lm -ledit -o wispy"; -*-
 #include "mpc/mpc.h"
 #include <stdio.h>
 #include <stdlib.h>
