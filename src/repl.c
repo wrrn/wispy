@@ -1,13 +1,5 @@
 // -*- compile-command: "gcc -std=c11 -Wall -pedantic repl.c mpc/mpc.c -lm -ledit -o wispy"; -*-
-#include "mpc/mpc.h"
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <editline/readline.h>
-#ifdef __linux__
-#include <editline/history.h>
-#endif
-
+#include "repl.h"
 
 long eval(mpc_ast_t* t) {
   /* If tagged a number returns directly */
@@ -31,11 +23,12 @@ long eval(mpc_ast_t* t) {
 }
 
 long eval_op(long x, char *op, long y) {
-  if (strcmp(op, "+")) { return x + y; }
-  if (strcmp(op, "-")) { return x - y; }
-  if (strcmp(op, "*")) { return x * y; }
-  if (strcmp(op, "/")) { return x / y; }
-  if (strcmp(op, "%")) { return x % y; }
+  if (strcmp(op, "+") == 0) { return x + y; }
+  if (strcmp(op, "-") == 0) { return x - y; }
+  if (strcmp(op, "*") == 0) { return x * y; }
+  if (strcmp(op, "/") == 0) { return x / y; }
+  if (strcmp(op, "%") == 0) { return x % y; }
+  return 0;
 }
 
 
@@ -89,6 +82,8 @@ int main(int argc, char **argv) {
     /* Free retrieved input */
     free(input);
   }
+
+  mpc_cleanup(4, Number, Operator, Expr, Lispy);
 
   return 0;
 
