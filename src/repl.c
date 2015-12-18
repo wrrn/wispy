@@ -1,4 +1,4 @@
-// -*- compile-command: "gcc -std=c11 -Wall -pedantic repl.c mpc/mpc.c -lm -ledit -o wispy"; -*-
+// -*- compile-command: "gcc -std=c11 -Wall -Wno-gnu -pedantic repl.c mpc/mpc.c -lm -ledit -o wispy"; -*-
 #include "repl.h"
 
 long eval(mpc_ast_t* t) {
