@@ -11,17 +11,17 @@
 #endif
 
 /* Enumeration of possible lval type */
-enum { LVAL_NUM, LVAL_ERR };
+typedef enum { LVAL_NUM, LVAL_ERR } lval_type;
 
 
 /* Enumberation of possible error types */
-enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
+typedef enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM } err_type;
 
 /* A value for wispy */
 typedef struct {
-  int type;
+  lval_type type;
   long num;
-  int err;
+  err_type err;
 } lval;
 
 /* Build lval number */
