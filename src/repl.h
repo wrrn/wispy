@@ -21,16 +21,16 @@ typedef enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM } err_type;
 typedef struct {
   lval_type type;
   union {
-    long num;
+    double num;
     err_type err;
   } val;
 } lval;
 
 /* Build lval number */
-lval lval_num(long x);
+lval lval_num(double x);
 
 /* Build lval err */
-lval lval_err(int err);
+lval lval_err(err_type err);
 
 /* Print an lval */
 void lval_print(lval v);
@@ -41,7 +41,7 @@ lval eval_op(lval x, char *op, lval y);
 
 static char const * const LANGDEF =
   "                                                                     \
-                number : /-?[0-9]+/ ;                                   \
+                number : /-?[0-9]+(\\.?[0-9]+)?/ ;                            \
                 operator : '+' | '-' | '*' | '/' | '%' ;                \
                 expr: <number> | '(' <operator>  <expr>+ ')' ;          \
                 lispy: /^/ <operator> <expr>+ /$/ ;                     \

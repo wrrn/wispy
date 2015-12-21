@@ -4,7 +4,7 @@
 lval eval(mpc_ast_t* t) {
   /* If tagged a number returns directly */
   if (strstr(t->tag, "number")) {
-    long num = strtol(t->contents, NULL, 10);
+    double num = strtod(t->contents, NULL);
     return errno != ERANGE ? lval_num(num) : lval_err(LERR_BAD_NUM);
 
   }
@@ -39,18 +39,18 @@ lval eval_op(lval x, char *op, lval y) {
       : lval_num( x.val.num / y.val.num );
 
   }
-  if (strcmp(op, "%") == 0) { return lval_num( x.val.num % y.val.num ); }
+  //  if (strcmp(op, "%") == 0) { return lval_num( x.val.num % y.val.num ); }
   return lval_err(LERR_BAD_OP);
 }
 
-lval lval_num(long x) {
+lval lval_num(double x) {
   lval v;
   v.type = LVAL_NUM;
   v.val.num = x;
   return v;
 }
 
-lval lval_err(int err) {
+lval lval_err(err_type err) {
   lval v;
   v.type = LVAL_ERR;
   v.val.err = err;
@@ -60,7 +60,7 @@ lval lval_err(int err) {
 void lval_print(lval v) {
   switch (v.type) {
   case LVAL_NUM:
-    printf("%li", v.val.num);
+    printf("%.4f", v.val.num);
     break;
   case LVAL_ERR:
     if (v.val.err == LERR_DIV_ZERO) {
