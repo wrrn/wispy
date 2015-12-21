@@ -30,46 +30,46 @@ lval eval_op(lval x, char *op, lval y) {
   if (y.type == LVAL_ERR) { return y; }
 
   /* Do the math on the number values */
-  if (strcmp(op, "+") == 0) { return lval_num( x.num + y.num ); }
-  if (strcmp(op, "-") == 0) { return lval_num( x.num - y.num ); }
-  if (strcmp(op, "*") == 0) { return lval_num( x.num * y.num ); }
+  if (strcmp(op, "+") == 0) { return lval_num( x.val.num + y.val.num ); }
+  if (strcmp(op, "-") == 0) { return lval_num( x.val.num - y.val.num ); }
+  if (strcmp(op, "*") == 0) { return lval_num( x.val.num * y.val.num ); }
   if (strcmp(op, "/") == 0) {
-    return y.num == 0
+    return y.val.num == 0
       ? lval_err(LERR_DIV_ZERO)
-      : lval_num( x.num / y.num );
+      : lval_num( x.val.num / y.val.num );
 
   }
-  if (strcmp(op, "%") == 0) { return lval_num( x.num % y.num ); }
+  if (strcmp(op, "%") == 0) { return lval_num( x.val.num % y.val.num ); }
   return lval_err(LERR_BAD_OP);
 }
 
 lval lval_num(long x) {
   lval v;
   v.type = LVAL_NUM;
-  v.num = x;
+  v.val.num = x;
   return v;
 }
 
 lval lval_err(int err) {
   lval v;
   v.type = LVAL_ERR;
-  v.err = err;
+  v.val.err = err;
   return v;
 }
 
 void lval_print(lval v) {
   switch (v.type) {
   case LVAL_NUM:
-    printf("%li", v.num);
+    printf("%li", v.val.num);
     break;
   case LVAL_ERR:
-    if (v.err == LERR_DIV_ZERO) {
+    if (v.val.err == LERR_DIV_ZERO) {
       printf("Error: Division by Zero!");
     }
-    if (v.err == LERR_BAD_OP) {
+    if (v.val.err == LERR_BAD_OP) {
       printf("Error: Invalid Operator!");
     }
-    if (v.err == LERR_BAD_NUM) {
+    if (v.val.err == LERR_BAD_NUM) {
       printf("Error: Invald Number!");
     }
     break;

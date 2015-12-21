@@ -20,8 +20,10 @@ typedef enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM } err_type;
 /* A value for wispy */
 typedef struct {
   lval_type type;
-  long num;
-  err_type err;
+  union {
+    long num;
+    err_type err;
+  } val;
 } lval;
 
 /* Build lval number */
