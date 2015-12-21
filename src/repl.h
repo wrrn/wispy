@@ -41,10 +41,11 @@ lval eval_op(lval x, char *op, lval y);
 
 static char const * const LANGDEF =
   "                                                                     \
-                number : /-?[0-9]+(\\.?[0-9]+)?/ ;                            \
-                operator : '+' | '-' | '*' | '/' | '%' ;                \
-                expr: <number> | '(' <operator>  <expr>+ ')' ;          \
-                lispy: /^/ <operator> <expr>+ /$/ ;                     \
+                number : /-?[0-9]+(\\.?[0-9]+)?/ ;                      \
+                symbol : '+' | '-' | '*' | '/' | '%' ;                  \
+                sexpr  : '(' <expr>* ')' ;                              \
+                expr   : <number> | <symbol> | <sexpr> ;                \
+                lispy  : /^/ <expr>* /$/ ;                              \
   ";
 
 #endif
