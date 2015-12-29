@@ -2,12 +2,13 @@
 #include "repl.h"
 
 lval* lval_eval_sexpr(lval* v) {
-   lsexpr* s = v->expr.sexpr; 
-   for (int i = 0; i < s->count; i++) { 
-     if (s->exprs[i]->type == LVAL_ERR) { 
-       return lval_take(v, i); 
-     } 
-   } 
+  assert(v->type == LVAL_SEXPR);
+  lsexpr* s = v->expr.sexpr; 
+  for (int i = 0; i < s->count; i++) { 
+    if (s->exprs[i]->type == LVAL_ERR) { 
+      return lval_take(v, i); 
+    } 
+  } 
 
   if (s->count == 0) {
     return v;
@@ -33,7 +34,7 @@ lval* lval_eval(lval* v) {
   if (v->type == LVAL_SEXPR) {
     return lval_eval_sexpr(v);
   } 
- return v; 
+  return v; 
 } 
 
 lval *lval_pop(lsexpr *s, int index) { 
@@ -124,6 +125,24 @@ lval* lval_sexpr(void) {
   return v;
 }
 
+lval* lval_qexpr(void) {
+  lval* v = malloc(sizeof(lval));
+  v->expr.qexpr = malloc(sizeof(lqexpr));
+  v->type = LVAL_QEXPR;
+  v->expr.qexpr->count = 0;
+  v->expr.qexpr->exprs = NULL;
+  return v;
+
+}
+
+void lval_expr_del(lextended_expr* expr) {
+  for (int i = 0; i < expr->count; i++) {
+    free(expr->exprs[i]);
+  }
+  free(expr->exprs);
+  free(expr);
+}
+
 void lval_del(lval* v) {
   switch (v->type) {
   case LVAL_NUM: break;
@@ -134,11 +153,10 @@ void lval_del(lval* v) {
     free(v->expr.sym);
     break;
   case LVAL_SEXPR:
-    for (int i = 0; i < v->expr.sexpr->count; i++) {
-      lval_del(v->expr.sexpr->exprs[i]);
-    }
-    free(v->expr.sexpr->exprs);
-    free(v->expr.sexpr);
+    lval_expr_del(v->expr.sexpr);
+    break;
+  case LVAL_QEXPR:
+    lval_expr_del(v->expr.qexpr);
     break;
   }
 
@@ -175,6 +193,10 @@ lval* lval_read(mpc_ast_t *t) {
     x = lval_sexpr();
   }
 
+  if (strstr(t->tag, "qexpr")) {
+    x = lval_qexpr();
+  }
+
   for (int i = 0; i < t->children_num; i++) {
     mpc_ast_t *child = t->children[i];
     if (strcmp(child->contents, "(") == 0) { continue; }
@@ -182,16 +204,19 @@ lval* lval_read(mpc_ast_t *t) {
     if (strcmp(child->contents, "{") == 0) { continue; }
     if (strcmp(child->contents, "}") == 0) { continue; }
     if (strcmp(child->tag, "regex") == 0) { continue; }
+    
     x->expr.sexpr = lval_add(x->expr.sexpr, lval_read(child));
   }
   return x;  
 }
 
-void lval_expr_print(lval* v, char open, char close) {
+
+
+void lval_expr_print(lextended_expr *expr, char open, char close) {
   printf("%c ", open);
-  int count = v->type == LVAL_SEXPR ? v->expr.sexpr->count : 0;
+  int count = expr->count;
   for (int i = 0; i < count; i++) {
-    lval_print(v->expr.sexpr->exprs[i]);
+    lval_print(expr->exprs[i]);
     putchar (' ');
   }
   putchar(close);
@@ -209,9 +234,11 @@ void lval_print(lval *v) {
     printf("%s", v->expr.sym);
     break;
   case LVAL_SEXPR:
-    lval_expr_print(v, '(', ')');
+    lval_expr_print(v->expr.sexpr, '(', ')');
     break;
-      
+  case LVAL_QEXPR:
+    lval_expr_print(v->expr.qexpr, '{', '}');
+    break;
   }
 }
 
@@ -226,12 +253,13 @@ int main(int argc, char **argv) {
   mpc_parser_t *Number = mpc_new("number");
   mpc_parser_t *Symbol = mpc_new("symbol");
   mpc_parser_t *Sexpr = mpc_new("sexpr");
+  mpc_parser_t *Qexpr = mpc_new("qexpr");
   mpc_parser_t *Expr = mpc_new("expr");
   mpc_parser_t *Lispy = mpc_new("lispy");
 
   mpca_lang(MPCA_LANG_DEFAULT,
             LANGDEF,
-            Number, Symbol, Sexpr, Expr, Lispy);
+            Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
 
   
   /* Print Version and Exit information */  
@@ -268,7 +296,7 @@ int main(int argc, char **argv) {
     free(input);
   }
 
-  mpc_cleanup(5, Number, Symbol, Sexpr, Expr, Lispy);
+  mpc_cleanup(6, Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
 
   return 0;
 
