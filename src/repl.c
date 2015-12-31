@@ -3,7 +3,12 @@
 
 lval* lval_eval_sexpr(lval* v) {
   assert(v->type == LVAL_SEXPR);
-  lsexpr* s = v->expr.sexpr; 
+  lsexpr* s = v->expr.sexpr;
+
+  for (int i = 0; i < s->count; i++) {
+    s->exprs[i] = lval_eval(s->exprs[i]);
+  }
+  
   for (int i = 0; i < s->count; i++) { 
     if (s->exprs[i]->type == LVAL_ERR) { 
       return lval_take(v, i); 
@@ -25,7 +30,7 @@ lval* lval_eval_sexpr(lval* v) {
     return lval_err("S-expression does not start with symbol!");
   }
 
-  lval* result = builtin_op(v, f->expr.sym);
+  lval* result = builtin(v, f->expr.sym);
   lval_del(f);
   return result;
 } 
@@ -37,7 +42,7 @@ lval* lval_eval(lval* v) {
   return v; 
 } 
 
-lval *lval_pop(lsexpr *s, int index) { 
+lval *lval_pop(lextended_expr *s, int index) { 
   lval *x = s->exprs[index];
   memmove(&s->exprs[index], &s->exprs[index+1], sizeof(lval*) * (s->count - index - 1));
   s->count--;
@@ -50,6 +55,17 @@ lval *lval_take(lval *v, int index) {
   lval_del(v); 
   return x;     
 } 
+
+lval* builtin(lval *v, char* func) {
+  if (strcmp("list", func) == 0) { return builtin_list(v); }
+  if (strcmp("head", func) == 0) { return builtin_head(v); }
+  if (strcmp("tail", func) == 0) { return builtin_tail(v); }
+  if (strcmp("join", func) == 0) { return builtin_join(v); }
+  if (strcmp("eval", func) == 0) { return builtin_eval(v); }
+  if (strstr("+-/*", func)) { return builtin_op(v, func); }
+  lval_del(v);
+  return lval_err("Unknown Function!");  
+}
 
 lval *builtin_op(lval *v, lsym sym) {
   lsexpr *sexpr;
@@ -89,6 +105,82 @@ lval *builtin_op(lval *v, lsym sym) {
   lval_del(v);
   return x;
 
+}
+
+lval* builtin_head(lval *a) {
+  lextended_expr* expr;
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'head' passed illegal type");
+  expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
+  LASSERT(a, expr->count == 1, "Function 'head' passed to many arguments");
+  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'head' passed incorrect type");
+  LASSERT(a, expr->exprs[0]->expr.qexpr->count != 0, "Function 'head' passed {}!");
+
+  lval* v = lval_take(a, 0);
+  lqexpr* qexpr = v->expr.qexpr;
+  while (qexpr->count > 1 ) {
+    lval_del(lval_pop(qexpr, 1));
+  }
+  return v;
+}
+
+lval* builtin_tail(lval *a) {
+  lextended_expr* expr;
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'tail' passed illegal type");
+  expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
+  LASSERT(a, expr->count == 1, "Function 'head' passed to many arguments");
+  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'head' passed incorrect type");
+  LASSERT(a, expr->exprs[0]->expr.qexpr->count != 0, "Function 'head' passed {}!");
+
+  lval* v = lval_take(a, 0);
+  lval_del(lval_pop(v->expr.qexpr,0));
+  return v;
+ 
+  
+}
+
+lval* builtin_list(lval *a) {
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'list' passed illegal type");
+  a->type = LVAL_QEXPR;
+  return a;
+}
+
+lval* builtin_eval(lval *a) {
+  lextended_expr* expr;
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'eval' passed illegal type");
+  expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
+  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'head' passed incorrect type");
+  lval *x = lval_take(a, 0);
+  x->type = LVAL_SEXPR;
+  return lval_eval(x);
+  
+}
+
+lval* builtin_join(lval* a) {
+  lextended_expr* expr;
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'join' passed illegal type");
+  expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
+  for (int i = 0; i < expr->count; i++) {
+    LASSERT(a, expr->exprs[i]->type == LVAL_QEXPR, "Fucntion 'join' passed incorrect type");
+  }
+
+  lval* x = lval_pop(expr, 0);
+  while ( expr->count ) {
+    x = lval_join(x, lval_pop(expr, 0));
+  }
+
+  lval_del(a);
+  return x;
+}
+
+lval* lval_join(lval *x, lval *y) {
+  assert(x->type == LVAL_QEXPR && y->type == LVAL_QEXPR);
+  lqexpr *y_qexpr = y->expr.qexpr;
+  while(y_qexpr) {
+    x->expr.qexpr = lval_add(x->expr.qexpr, lval_pop(y_qexpr,0));
+  }
+
+  lval_del(y);
+  return x;
 }
 
 lval* lval_num(double x) {
@@ -164,8 +256,7 @@ void lval_del(lval* v) {
   v = NULL;
 }
 
-lsexpr* lval_add(lsexpr* s, lval *x) {
-
+lextended_expr* lval_add(lextended_expr* s, lval *x) {
   s->count++;
   s->exprs = realloc(s->exprs, sizeof(lval*) * s->count);
   s->exprs[s->count - 1] = x;

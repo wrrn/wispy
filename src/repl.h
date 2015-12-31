@@ -11,6 +11,12 @@
 #include <editline/history.h>
 #endif
 
+#define LASSERT(args, cond, err) \
+  if (!(cond)) {                \
+    lval_del(args);             \
+    return lval_err(err);       \
+  }
+
 /* Enumeration of possible lval type */
 typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR } lval_type;
 
@@ -67,7 +73,7 @@ void lval_del(lval* v);
 /** End Destructor **/
 
 /* Add a new lval to a sexpr */
-lsexpr* lval_add(lsexpr* v, lval *x);
+lextended_expr* lval_add(lsexpr* v, lval *x);
 
 /* Read number into lval */
 lval *lval_read_num(mpc_ast_t *t);
@@ -87,20 +93,27 @@ lval* lval_eval_sexpr(lval* v);
 lval* lval_eval(lval *v);
 
 /* Pop something out of Sexpr cells */
-lval* lval_pop(lsexpr *s, int index);
+lval* lval_pop(lextended_expr *s, int index);
 
 /* Take something from an lval and the delete the containing lval */
 lval* lval_take(lval *v, int index);
 
 /* Evaluation of builtin operations */
+lval* builtin(lval* a, char* func);
 lval* builtin_op(lval* v, lsym sym);
+lval* builtin_head(lval *v);
+lval* builtin_tail(lval *v);
+lval* builtin_list(lval *v);
+lval* builtin_eval(lval *v);
+lval* builtin_join(lval* v);
+lval* lval_join(lval* x, lval* y);
 
 static char const * const LANGDEF =
   "                                                                     \
                 number : /-?[0-9]+(\\.?[0-9]+)?/ ;                      \
-                symbol : '+' | '-' | '*' | '/' | '%' ;                  \
+                symbol : '+' | '-' | '*' | '/' | '%' | \"list\"         \
+                       | \"head\" | \"tail\" | \"join\" |  \"eval\" ;   \
                 sexpr  : '(' <expr>* ')' ;                              \
-                expr   : <number> | <symbol> | <sexpr> ;                \
                 qexpr  : '{' <expr>* '}' ;                              \
                 expr   : <number> | <symbol> | <sexpr> | <qexpr> ;      \
                 lispy  : /^/ <expr>* /$/ ;                              \
