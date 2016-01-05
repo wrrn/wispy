@@ -107,12 +107,17 @@ lval* builtin_list(lval *v);
 lval* builtin_eval(lval *v);
 lval* builtin_join(lval* v);
 lval* lval_join(lval* x, lval* y);
+lval* builtin_cons(lval *a);
+lval* builtin_init(lval *a);
+lval* builtin_len(lval *a);
+
 
 static char const * const LANGDEF =
   "                                                                     \
                 number : /-?[0-9]+(\\.?[0-9]+)?/ ;                      \
                 symbol : '+' | '-' | '*' | '/' | '%' | \"list\"         \
-                       | \"head\" | \"tail\" | \"join\" |  \"eval\" ;   \
+                       | \"head\" | \"tail\" | \"join\" |  \"eval\"     \
+                       | \"cons\" | \"len\" | \"init\" ;                \
                 sexpr  : '(' <expr>* ')' ;                              \
                 qexpr  : '{' <expr>* '}' ;                              \
                 expr   : <number> | <symbol> | <sexpr> | <qexpr> ;      \
