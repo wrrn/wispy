@@ -18,11 +18,18 @@
   }
 
 /* Enumeration of possible lval type */
-typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR } lval_type;
+typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_FUN, LVAL_SEXPR, LVAL_QEXPR } lval_type;
 
+struct lval;
+struct lenv;
+typedef struct lval lval;
+typedef struct lenv lenv;
 typedef char * lerr;
 typedef char * lsym;
 
+
+
+typedef lval*(*lbuiltin)(lenv*, lval*); 
 
 /* A S-exp for wispy */
 typedef struct lextended_expr {
@@ -41,6 +48,8 @@ typedef union lexpr {
   /* End atom definition */
   lsexpr *sexpr;
   lqexpr *qexpr;
+  lbuiltin fun;
+  
 } lexpr; 
 
 /* A value for wispy */
@@ -63,7 +72,12 @@ lval* lval_sym(lsym sym);
 /* Build lval Sexpr */
 lval* lval_sexpr(void);
 
+/* Build lval Qexpr */
 lval* lval_qexpr(void);
+
+/* Build lval builtin func */
+lval* lval_fun(lbuiltin func);
+
 /** End Constructors **/
 
 /** Destructor **/
@@ -115,9 +129,7 @@ lval* builtin_len(lval *a);
 static char const * const LANGDEF =
   "                                                                     \
                 number : /-?[0-9]+(\\.?[0-9]+)?/ ;                      \
-                symbol : '+' | '-' | '*' | '/' | '%' | \"list\"         \
-                       | \"head\" | \"tail\" | \"join\" |  \"eval\"     \
-                       | \"cons\" | \"len\" | \"init\" ;                \
+                symbol : /[a-zA-Z0-9_+\\-/\\\\=<>!&]+/ ;                \
                 sexpr  : '(' <expr>* ')' ;                              \
                 qexpr  : '{' <expr>* '}' ;                              \
                 expr   : <number> | <symbol> | <sexpr> | <qexpr> ;      \
