@@ -86,6 +86,11 @@ void exprs_del(int count, lval** exprs);
 void lval_del(lval* v);
 /** End Destructor **/
 
+/* Copy an lval */
+lval* lval_copy(lval* v);
+
+lextended_expr* lextended_expr_copy(lextended_expr* e);
+
 /* Add a new lval to a sexpr */
 lextended_expr* lval_add(lsexpr* v, lval *x);
 

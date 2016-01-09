@@ -313,6 +313,48 @@ void lval_del(lval* v) {
   v = NULL;
 }
 
+lval* lval_copy(lval *v) {
+  lval *x = malloc(sizeof(lval));
+  x->type = v->type;
+  
+  switch (v->type) {
+  case LVAL_FUN:
+    x->expr.fun = v->expr.fun;
+    break;
+  case LVAL_NUM:
+    x->expr.num = v->expr.num;
+    break;
+  case LVAL_ERR:
+    x->expr.err = malloc(strlen(v->expr.err) + 1);
+    strcpy(x->expr.err, v->expr.err);
+    break;
+  case LVAL_SYM:
+    x->expr.sym = malloc(strlen(v->expr.sym) +1);
+    strcpy(x->expr.sym, v->expr.sym);
+    break;
+  case LVAL_SEXPR:
+    x->expr.sexpr = lextended_expr_copy(v->expr.sexpr);
+    break;
+  case LVAL_QEXPR:
+    x->expr.qexpr = lextended_expr_copy(v->expr.qexpr);
+    break;
+  }
+
+  return x;
+  
+}
+
+lextended_expr* lextended_expr_copy(lextended_expr* e) {
+  lextended_expr *expr = malloc(sizeof(lextended_expr));
+  expr->count = e->count;
+  expr->exprs = malloc(sizeof(lval*) * expr->count);
+  for (int i = 0; i < expr->count; i++) {
+    expr->exprs[i] = lval_copy(e->exprs[i]);
+  }
+
+  return expr;
+}
+
 lextended_expr* lval_add(lextended_expr* s, lval *x) {
   s->count++;
   s->exprs = realloc(s->exprs, sizeof(lval*) * s->count);
