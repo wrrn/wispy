@@ -112,10 +112,10 @@ void lval_print(lval* v);
 void lval_println(lval* v);
 
 /* Evaluation of Sexpr */
-lval* lval_eval_sexpr(lval* v);
+lval* lval_eval_sexpr(lenv* e, lval* v);
 
 /* Evaluation of lval */
-lval* lval_eval(lval *v);
+lval* lval_eval(lenv* e, lval *v);
 
 /* Pop something out of Sexpr cells */
 lval* lval_pop(lextended_expr *s, int index);

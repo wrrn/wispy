@@ -1,12 +1,12 @@
 // -*- compile-command: "gcc -std=c11 -Wall -Wno-gnu -pedantic repl.c mpc/mpc.c -lm -ledit -o wispy"; -*-
 #include "repl.h"
 
-lval* lval_eval_sexpr(lval* v) {
+lval* lval_eval_sexpr(lenv* e, lval* v) {
   assert(v->type == LVAL_SEXPR);
   lsexpr* s = v->expr.sexpr;
 
   for (int i = 0; i < s->count; i++) {
-    s->exprs[i] = lval_eval(s->exprs[i]);
+    s->exprs[i] = lval_eval(e, s->exprs[i]);
   }
   
   for (int i = 0; i < s->count; i++) { 
@@ -24,20 +24,25 @@ lval* lval_eval_sexpr(lval* v) {
   }
 
   lval *f = lval_pop(s, 0);
-  if (f->type != LVAL_SYM) {
+  if (f->type != LVAL_FUN) {
     lval_del(f);
     lval_del(v);
-    return lval_err("S-expression does not start with symbol!");
+    return lval_err("S-expression does not start with a function!");
   }
 
-  lval* result = builtin(v, f->expr.sym);
+  lval* result = f->expr.fun(e,v);
   lval_del(f);
   return result;
 } 
 
-lval* lval_eval(lval* v) {
+lval* lval_eval(lenv *e, lval* v) {
+  if (v->type == LVAL_SYM) {
+    lval *x = lenv_get(e, v);
+    lval_del(v);
+    return x;
+  }
   if (v->type == LVAL_SEXPR) {
-    return lval_eval_sexpr(v);
+    return lval_eval_sexpr(e, v);
   } 
   return v; 
 } 
@@ -281,6 +286,7 @@ lval* lval_fun(lbuiltin func) {
   v->expr.fun = func;
   return v;
 }
+
 
 void lval_expr_del(lextended_expr* expr) {
   for (int i = 0; i < expr->count; i++) {
