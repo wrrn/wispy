@@ -59,6 +59,12 @@ typedef struct lval {
 } lval;
 
 
+struct lenv {
+  int count;
+  char **syms;
+  lval** vals;
+};
+
 /** Constructors **/
 /* Build lval number */
 lval* lval_num(double x);
@@ -129,6 +135,13 @@ lval* lval_join(lval* x, lval* y);
 lval* builtin_cons(lval *a);
 lval* builtin_init(lval *a);
 lval* builtin_len(lval *a);
+
+/* Lenv functions */
+lenv* lenv_new(void);
+void lenv_del(lenv* e);
+lval* lenv_get(lenv *e, lval *k);
+void lenv_put(lenv *e, lval* k, lval *v);
+  
 
 
 static char const * const LANGDEF =
