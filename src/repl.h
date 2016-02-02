@@ -124,30 +124,39 @@ lval* lval_pop(lextended_expr *s, int index);
 lval* lval_take(lval *v, int index);
 
 /* Evaluation of builtin operations */
-lval* builtin(lval* a, char* func);
-lval* builtin_op(lval* v, lsym sym);
-lval* builtin_head(lval *v);
-lval* builtin_tail(lval *v);
-lval* builtin_list(lval *v);
-lval* builtin_eval(lval *v);
-lval* builtin_join(lval* v);
+lval* builtin(lenv *e, lval* a, char* func);
+lval* builtin_op(lenv *e, lval* v, lsym sym);
+
+/* Builtin mathmatical functions */
+lval *builtin_add(lenv *e, lval *v);
+lval *builtin_sub(lenv *e, lval *v);
+lval *builtin_mul(lenv *e, lval *v);
+lval *builtin_div(lenv *e, lval *v);
+
+/* Builtin list functions */
+lval* builtin_head(lenv *e, lval *v);
+lval* builtin_tail(lenv *e,lval *v);
+lval* builtin_list(lenv *e,lval *v);
+lval* builtin_eval(lenv *e, lval *v);
+lval* builtin_join(lenv *e, lval* v);
 lval* lval_join(lval* x, lval* y);
-lval* builtin_cons(lval *a);
-lval* builtin_init(lval *a);
-lval* builtin_len(lval *a);
+lval* builtin_cons(lenv *e, lval *a);
+lval* builtin_init(lenv *e, lval *a);
+lval* builtin_len(lenv *e, lval *a);
 
 /* Lenv functions */
 lenv* lenv_new(void);
 void lenv_del(lenv* e);
 lval* lenv_get(lenv *e, lval *k);
 void lenv_put(lenv *e, lval* k, lval *v);
-  
+void lenv_add_builtin(lenv *e, char* name, lbuiltin func);
+void lenv_add_builtins(lenv *e);
 
 
 static char const * const LANGDEF =
   "                                                                     \
                 number : /-?[0-9]+(\\.?[0-9]+)?/ ;                      \
-                symbol : /[a-zA-Z0-9_+\\-/\\\\=<>!&]+/ ;                \
+                symbol : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;             \
                 sexpr  : '(' <expr>* ')' ;                              \
                 qexpr  : '{' <expr>* '}' ;                              \
                 expr   : <number> | <symbol> | <sexpr> | <qexpr> ;      \
