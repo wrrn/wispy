@@ -144,6 +144,9 @@ lval* builtin_cons(lenv *e, lval *a);
 lval* builtin_init(lenv *e, lval *a);
 lval* builtin_len(lenv *e, lval *a);
 
+/* Function utility functions */
+lval* builtin_def(lenv* e, lval *a);
+
 /* Lenv functions */
 lenv* lenv_new(void);
 void lenv_del(lenv* e);
@@ -151,6 +154,7 @@ lval* lenv_get(lenv *e, lval *k);
 void lenv_put(lenv *e, lval* k, lval *v);
 void lenv_add_builtin(lenv *e, char* name, lbuiltin func);
 void lenv_add_builtins(lenv *e);
+
 
 
 static char const * const LANGDEF =

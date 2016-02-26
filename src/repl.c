@@ -515,6 +515,31 @@ void lenv_put(lenv* e, lval* k, lval* v) {
   strcpy(e->syms[e->count - 1], k->expr.sym);
     
 }
+
+lval *builtin_def(lenv *e, lval *a) {
+  lqexpr *syms;
+  lsexpr *sexpr;
+  
+  LASSERT(a, a->type == LVAL_SEXPR, "Function 'def' passed incorrect type");
+  LASSERT(a, a->expr.sexpr->exprs[0]->type == LVAL_QEXPR, "Function 'def' passed incorrect type");
+  
+  sexpr = a->expr.sexpr;
+  syms = sexpr->exprs[0]->expr.qexpr;
+
+  for( int i = 0; i < syms->count; i++) {
+    LASSERT(a, syms->exprs[i]->type == LVAL_SYM, "Function 'def' cannot define non-symbol");
+  }
+
+  LASSERT(a, syms->count == sexpr->count - 1, "Function 'def' cannot define incorret number of values to symbols");
+
+  for (int i = 0; i < syms->count; i++) {
+    lenv_put(e, syms->exprs[i], sexpr->exprs[i+1]);
+  }
+
+  lval_del(a);
+  return lval_sexpr();
+}
+
 void lenv_add_builtin(lenv *e, char* name, lbuiltin func) {
   lval *k = lval_sym(name);
   lval *v = lval_fun(func);
@@ -539,8 +564,12 @@ void lenv_add_builtins(lenv *e) {
   lenv_add_builtin(e, "*", builtin_mul);
   lenv_add_builtin(e, "/", builtin_div);
 
+  /* Variable functions */
+  lenv_add_builtin(e, "def", builtin_def);
   
 }
+
+
 int main(int argc, char **argv) {
 
   /* Create some parsers */
