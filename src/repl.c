@@ -136,10 +136,20 @@ lval* builtin_div(lenv* e, lval* a) {
 
 lval* builtin_head(lenv *e, lval *a) {
   lextended_expr* expr;
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'head' passed illegal type");
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'head' passed illegal type expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          ltype_name(a->type));
   expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
-  LASSERT(a, expr->count == 1, "Function 'head' passed to many arguments");
-  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'head' passed incorrect type");
+  LASSERT(a, expr->count == 1,
+          "Function 'head' passed too many arguments. "
+          "Got %i, Expected %i", expr->count, 1);
+  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR,
+          "Function 'head' passed incorrect type"
+          "Expected %s but got %i",
+          ltype_name(LVAL_QEXPR),
+          ltype_name(expr->exprs[0]->type));
   LASSERT(a, expr->exprs[0]->expr.qexpr->count != 0, "Function 'head' passed {}!");
 
   lval* v = lval_take(a, 0);
@@ -150,13 +160,25 @@ lval* builtin_head(lenv *e, lval *a) {
   return v;
 }
 
+
 lval* builtin_tail(lenv *e, lval *a) {
   lextended_expr* expr;
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'tail' passed illegal type");
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'tail' passed illegal type"
+          "Expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          a->type);
   expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
-  LASSERT(a, expr->count == 1, "Function 'head' passed to many arguments");
-  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'head' passed incorrect type");
-  LASSERT(a, expr->exprs[0]->expr.qexpr->count != 0, "Function 'head' passed {}!");
+  LASSERT(a, expr->count == 1,
+          "Function 'tail' passed to many arguments"
+          "Expected %i, Got %i", 1, expr->count);
+  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR,
+          "Function 'tail' passed incorrect type"
+          "Expected %s but got %s",
+          ltype_name(LVAL_QEXPR),
+          ltype_name(expr->exprs[0]->type));
+  LASSERT(a, expr->exprs[0]->expr.qexpr->count != 0, "Function 'tail' passed {}!");
 
   lval* v = lval_take(a, 0);
   lval_del(lval_pop(v->expr.qexpr,0));
@@ -166,28 +188,53 @@ lval* builtin_tail(lenv *e, lval *a) {
 }
 
 lval* builtin_list(lenv *e, lval *a) {
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'list' passed illegal type");
+ LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'list' passed illegal type"
+          "Expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          a->type);
   a->type = LVAL_QEXPR;
   return a;
 }
 
 lval* builtin_eval(lenv *e, lval *a) {
   lextended_expr* expr;
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'eval' passed illegal type");
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'eval' passed illegal type"
+          "Expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          a->type);
   expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
-  LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'eval' passed incorrect type");
-  lval *x = lval_take(a, 0);
-  x->type = LVAL_SEXPR;
-  return lval_eval(e, x);
+ LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR,
+         "Function 'eval' passed incorrect type"
+         "Expected %s but got %i",
+         ltype_name(LVAL_QEXPR),
+         ltype_name(expr->exprs[0]->type));
+ lval *x = lval_take(a, 0);
+ x->type = LVAL_SEXPR;
+ return lval_eval(e, x);
   
 }
 
 lval *builtin_cons(lenv *e, lval *a) {
   lextended_expr* expr;
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'cons' passed illegal type");
+  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'cons' passed illegal type"
+          "Expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          a->type);
   expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
-  LASSERT(a, expr->count == 2, "Function 'cons' passed too many arguments!");
-  LASSERT(a, expr->exprs[1]->type == LVAL_QEXPR, "Function 'cons' was passed an illegal type");
+  LASSERT(a, expr->count == 2,
+          "Function 'cons' passed too many arguments! "
+          "Expected %i, Got %i.", 2, expr->count);
+  LASSERT(a, expr->exprs[1]->type == LVAL_QEXPR,
+          "Function 'cons' was passed an illegal type."
+          "Expected %s, Got %i.",
+          ltype_name(LVAL_QEXPR),
+          ltype_name(expr->exprs[1]->type));
   lval *val = lval_pop(expr, 0);
   lval *expr_qexpr = lval_take(a, 0);
   lqexpr* qexpr = expr_qexpr->expr.qexpr;
@@ -203,9 +250,16 @@ lval *builtin_cons(lenv *e, lval *a) {
 lval* builtin_len(lenv *e, lval *a) {
   lval* val;
   lextended_expr* expr;
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'len' passed illegal type");
+   LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'len' passed illegal type"
+           "Expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          a->type);
   expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
-  LASSERT(a, expr->count == 1, "Function 'len' passed too many arguments!");
+  LASSERT(a, expr->count == 1,
+          "Function 'len' passed too many arguments! "
+          "Expected %i, Got %i.", 1, expr->count);
   LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'len' was passed an illegal type");
   lval *qexpr = lval_take(a, 0);
   val = lval_num(qexpr->expr.qexpr->count);
@@ -215,9 +269,16 @@ lval* builtin_len(lenv *e, lval *a) {
 
 lval* builtin_init(lenv *e, lval *a) {
   lextended_expr* expr;
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'init' passed illegal type");
+ LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'init' passed illegal type"
+          "Expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          a->type);
   expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
-  LASSERT(a, expr->count == 1, "Function 'init' passed too many arguments!");
+  LASSERT(a, expr->count == 1,
+          "Function 'init' passed too many arguments!"
+          "Expected %i, Got %i.", 1, expr->count);
   LASSERT(a, expr->exprs[0]->type == LVAL_QEXPR, "Function 'init' was passed an illegal type");
   lval* qexpr = lval_take(a, 0);
   lval* first = lval_pop(qexpr->expr.qexpr, 0);
@@ -229,10 +290,15 @@ lval* builtin_init(lenv *e, lval *a) {
 
 lval* builtin_join(lenv *e, lval* a) {
   lextended_expr* expr;
-  LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR, "Function 'join' passed illegal type");
+ LASSERT(a, a->type == LVAL_SEXPR || a->type == LVAL_QEXPR,
+          "Function 'join' passed illegal type"
+          "Expected %s or %s but got %s",
+          ltype_name(LVAL_SEXPR),
+          ltype_name(LVAL_QEXPR),
+          a->type);
   expr = a->type == LVAL_SEXPR ? a->expr.sexpr : a->expr.qexpr;
   for (int i = 0; i < expr->count; i++) {
-    LASSERT(a, expr->exprs[i]->type == LVAL_QEXPR, "Fucntion 'join' passed incorrect type");
+    LASSERT(a, expr->exprs[i]->type == LVAL_QEXPR, "Function 'join' passed incorrect type");
   }
 
   lval* x = lval_pop(expr, 0);
@@ -262,12 +328,15 @@ lval* lval_num(double x) {
   return v;
 }
 
-lval* lval_err(lerr err) {
+lval* lval_err(char *fmt, ...) {
   lval *v = malloc(sizeof(lval));
   v->type = LVAL_ERR;
-  v->expr.err = malloc(strlen(err) + 1);
-  strcpy(v->expr.err, err);
-
+  va_list va;
+  va_start(va, fmt);
+  v->expr.err = malloc(512);
+  vsnprintf(v->expr.err, 511, fmt, va);
+  v->expr.err = realloc(v->expr.err, strlen(v->expr.err)+1);
+  va_end(va);
   return v;
 }
 
@@ -495,7 +564,7 @@ lval* lenv_get(lenv* e, lval *k) {
     }
   }
 
-  return lval_err("unbound symbol!");
+  return lval_err("Unbound symbol '%s'", k->expr.sym);
 }
 
 void lenv_put(lenv* e, lval* k, lval* v) {
@@ -520,8 +589,12 @@ lval *builtin_def(lenv *e, lval *a) {
   lqexpr *syms;
   lsexpr *sexpr;
   
-  LASSERT(a, a->type == LVAL_SEXPR, "Function 'def' passed incorrect type");
-  LASSERT(a, a->expr.sexpr->exprs[0]->type == LVAL_QEXPR, "Function 'def' passed incorrect type");
+  LASSERT(a, a->type == LVAL_SEXPR,
+          "Function 'def' passed incorrect type.",
+          "Expected %i, Got %i", LVAL_SEXPR, a->type);
+  LASSERT(a, a->expr.sexpr->exprs[0]->type == LVAL_QEXPR,
+          "Function 'def' first parameter passed incorrect type. "
+          "Expected %i, Got %i.", LVAL_QEXPR, a->expr.sexpr->exprs[0]->type);
   
   sexpr = a->expr.sexpr;
   syms = sexpr->exprs[0]->expr.qexpr;
@@ -530,7 +603,7 @@ lval *builtin_def(lenv *e, lval *a) {
     LASSERT(a, syms->exprs[i]->type == LVAL_SYM, "Function 'def' cannot define non-symbol");
   }
 
-  LASSERT(a, syms->count == sexpr->count - 1, "Function 'def' cannot define incorret number of values to symbols");
+  LASSERT(a, syms->count == sexpr->count - 1, "Function 'def' cannot define incorrect number of values to symbols");
 
   for (int i = 0; i < syms->count; i++) {
     lenv_put(e, syms->exprs[i], sexpr->exprs[i+1]);
@@ -569,6 +642,17 @@ void lenv_add_builtins(lenv *e) {
   
 }
 
+
+char *ltype_name(int t) {
+  switch(t) {
+  case LVAL_FUN: return "Function";
+  case LVAL_NUM: return "Number";
+  case LVAL_SYM: return "Symbol";
+  case LVAL_SEXPR: return "S-Expression";
+  case LVAL_QEXPR: return "Q-Expression";
+  default: return "Unknown";
+  }
+}
 
 int main(int argc, char **argv) {
 

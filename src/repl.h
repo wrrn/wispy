@@ -11,10 +11,11 @@
 #include <editline/history.h>
 #endif
 
-#define LASSERT(args, cond, err) \
-  if (!(cond)) {                \
-    lval_del(args);             \
-    return lval_err(err);       \
+#define LASSERT(args, cond, fmt, ...)           \
+  if (!(cond)) {                                \
+    lval *err =  lval_err(fmt, ##__VA_ARGS__);  \
+    lval_del(args);                             \
+    return err;                                 \
   }
 
 /* Enumeration of possible lval type */
@@ -70,7 +71,7 @@ struct lenv {
 lval* lval_num(double x);
 
 /* Build lval err */
-lval* lval_err(lerr err);
+lval* lval_err(char* fmt, ...);
 
 /* Build lval symbol */
 lval* lval_sym(lsym sym);
@@ -154,6 +155,9 @@ lval* lenv_get(lenv *e, lval *k);
 void lenv_put(lenv *e, lval* k, lval *v);
 void lenv_add_builtin(lenv *e, char* name, lbuiltin func);
 void lenv_add_builtins(lenv *e);
+
+/* Debugging/Error Utilities */
+char *ltype_name(int t);
 
 
 
