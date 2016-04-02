@@ -18,8 +18,37 @@
     return err;                                 \
   }
 
+#define LASSERT_TYPE( func, arg, expected)                 \
+  LASSERT(arg, arg->type == expected,                       \
+          "Function '%s' passed incorrect type. "           \
+          "Got %s, expected %s.",                           \
+          func,                                             \
+          ltype_name(arg->type), ltype_name(expected))
+
+#define LASSERT_EXPR(func, args)                                                \
+  LASSERT(args, args->type == LVAL_SEXPR || args->type == LVAL_QEXPR,           \
+          "Function '%s' passed incorrect type. "                               \
+          "Expected %s or %s, but got %s",                                      \
+          ltype_name(LVAL_SEXPR), ltype_name(LVAL_QEXPR),ltype_name(args->type));                                    
+
+#define LASSERT_NUM(func, args, num)                            \
+  LASSERT(args, get_expr(args)->count == num,                   \
+          "Function '%s' passed incorrect number of arguments." \
+          "Expected %d, but got %d",                            \
+          num, get_expr(args)->count);
+
+#define LASSERT_ARG_TYPE(func, args, argnum, expected)              \
+  LASSERT(args, get_expr(args)->exprs[argnum]->type == expected,    \
+          "Function '%s' passed illegal argument %d"                \
+          "Expected %s, but go %s",                                 \
+          func, argnum, ltype_name(expected),                       \
+          ltype_name(get_expr(args)->exprs[argnum]->type));
+
+  
+
+
 /* Enumeration of possible lval type */
-typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_FUN, LVAL_SEXPR, LVAL_QEXPR } lval_type;
+typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_FUN, LVAL_BUILTIN, LVAL_SEXPR, LVAL_QEXPR } lval_type;
 
 struct lval;
 struct lenv;
@@ -41,6 +70,12 @@ typedef struct lextended_expr {
 typedef lextended_expr lsexpr;
 typedef lextended_expr lqexpr;
 
+typedef struct lfunction {
+  lval *formals;
+  lenv *env;
+  lval *body;
+} lfunction;
+
 typedef union lexpr {
   /* Define the atom */
   double num;
@@ -49,7 +84,8 @@ typedef union lexpr {
   /* End atom definition */
   lsexpr *sexpr;
   lqexpr *qexpr;
-  lbuiltin fun;
+  lbuiltin builtin;
+  lfunction *func;
   
 } lexpr; 
 
@@ -85,6 +121,9 @@ lval* lval_qexpr(void);
 /* Build lval builtin func */
 lval* lval_fun(lbuiltin func);
 
+/* Build user defined func */
+lval* lval_lambda(lval* formals, lval* body);
+
 /** End Constructors **/
 
 /** Destructor **/
@@ -92,6 +131,9 @@ lval* lval_fun(lbuiltin func);
 void exprs_del(int count, lval** exprs);
 void lval_del(lval* v);
 /** End Destructor **/
+
+/* Utility functions */
+lextended_expr *get_expr(lval* v);
 
 /* Copy an lval */
 lval* lval_copy(lval* v);
