@@ -230,7 +230,26 @@ lval* builtin_join(lenv *e, lval* a) {
   return x;
 }
 
-lval* builtin_lambda(){return NULL;}
+lval* builtin_lambda(lenv *e, lval *a){
+  LASSERT_EXPR("\\", a);
+  LASSERT_NUM("\\", a, 2);
+  LASSERT_ARG_TYPE("\\", a, 0, LVAL_QEXPR);
+  LASSERT_ARG_TYPE("\\", a, 1, LVAL_QEXPR);
+  lextended_expr *expr = get_expr(a);
+  lextended_expr *symbols_list = get_expr(expr->exprs[0]);
+    for (int i = 0; i < symbols_list->count; i++) {
+      int val_type = symbols_list->exprs[i]->type;
+      LASSERT(a, val_type == LVAL_SYM,
+              "Cannot define non-symbol. Got %s, expected %s",
+              ltype_name(val_type), ltype_name(LVAL_SYM));
+    }
+
+  lval* formals = lval_pop(expr, 0);
+  lval* body = lval_pop(expr, 0);
+  lval_del(a);
+
+  return lval_lambda(formals, body);
+}
 
 lval* lval_join(lval *x, lval *y) {
   LASSERT_TYPE("lval_join", x, LVAL_QEXPR);
