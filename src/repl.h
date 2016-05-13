@@ -97,6 +97,7 @@ typedef struct lval {
 
 
 struct lenv {
+  lenv* par;
   int count;
   char **syms;
   lval** vals;
@@ -188,14 +189,18 @@ lval* builtin_init(lenv *e, lval *a);
 lval* builtin_len(lenv *e, lval *a);
 
 /* Function utility functions */
-lval* builtin_def(lenv* e, lval *a);
-lval* buildin_lambda(lenv *e, lval *a);
+lval* builtin_def(lenv *e, lval *a);
+lval* builtin_lambda(lenv *e, lval *a);
+lval* builtin_put(lenv *e, lval *a);
+lval* lval_call(lenv *e, lval *f, lval *sexpr);
 
 /* Lenv functions */
 lenv* lenv_new(void);
 void lenv_del(lenv* e);
 lval* lenv_get(lenv *e, lval *k);
 void lenv_put(lenv *e, lval* k, lval *v);
+void lenv_def(lenv *e, lval* k, lval *v);
+lenv* lenv_copy(lenv *e);
 void lenv_add_builtin(lenv *e, char* name, lbuiltin func);
 void lenv_add_builtins(lenv *e);
 

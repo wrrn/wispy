@@ -1,4 +1,4 @@
-// -*- compile-command: "gcc -std=c11 -Wall -Wno-gnu -pedantic repl.c mpc/mpc.c -lm -ledit -o wispy"; -*-
+// -*- compile-command: "gcc -std=c11 -Wall -Wno-gnu -g -pedantic repl.c mpc/mpc.c -lm -ledit -o wispy"; -*-
 #include "repl.h"
 
 lval* lval_eval_sexpr(lenv* e, lval* v) {
@@ -30,7 +30,7 @@ lval* lval_eval_sexpr(lenv* e, lval* v) {
     return lval_err("S-expression does not start with a function!");
   }
   
-  lval* result = f->expr.builtin(e,v);
+  lval* result = lval_call(e,f,v);
   lval_del(f);
   return result;
 } 
@@ -256,7 +256,7 @@ lval* lval_join(lval *x, lval *y) {
   LASSERT_TYPE("lval_join", y, LVAL_QEXPR);
 
   lqexpr *y_qexpr = y->expr.qexpr;
-  while(y_qexpr) {
+  while(y_qexpr->count > 0) {
     x->expr.qexpr = lval_add(x->expr.qexpr, lval_pop(y_qexpr,0));
   }
 
@@ -321,7 +321,7 @@ lval* lval_fun(lbuiltin func) {
 }
 
 
-lval* lval_lamba(lval *formals, lval* body) {
+lval* lval_lambda(lval *formals, lval* body) {
   lval *v = malloc(sizeof(lval));
   lfunction *f = malloc(sizeof(lfunction));
   v->type = LVAL_FUN;
@@ -509,6 +509,81 @@ void lval_print(lval *v) {
   }
 }
 
+lval *lval_call(lenv *e, lval *f, lval *sexpr) {
+  LASSERT_EXPR("call", sexpr);
+  if (f->type == LVAL_BUILTIN) {
+    return f->expr.builtin(e, sexpr);
+  }
+
+  lfunction *func = f->expr.func;
+  lextended_expr *formals = get_expr(func->formals);
+  lsexpr *a = get_expr(sexpr);
+  
+
+  int given = a->count;
+  int total = formals->count;
+
+  while (a->count) {
+    if (formals->count == 0) {
+      lval_del(sexpr);
+      return lval_err(
+                      "Function passed too many arguments"
+                      "Got %i, Expected %i", given, total
+                      );
+    }
+
+    lval *sym = lval_pop(formals, 0);
+
+    /* Niladic parameter */
+    if(strcmp(sym->expr.sym, "&") == 0) {
+      LASSERT(sexpr, formals->count == 1,
+                  "Function format invalid"
+                  "Symbol '&' not followd by single symbol.");
+      lval *nsym = lval_pop(formals, 0);
+      lenv_put(func->env, nsym, builtin_list(e, sexpr));
+      lval_del(sym);
+      lval_del(nsym);
+      break;
+    }
+    
+    lval *val = lval_pop(a, 0);
+    lenv_put(func->env, sym, val);
+
+    lval_del(sym);
+    lval_del(val);    
+  }
+
+  lval_del(sexpr);
+  a = NULL;
+
+  if ( formals->count > 0 && strcmp(formals->exprs[0]->expr.sym, "&") == 0) {
+    if (formals->count != 2) {
+      return lval_err("Function format invalid"
+                      "Symbol '&' not followed by single symbol.");
+    }
+    // Pop of the '&' symbol
+    lval_del(lval_pop(formals, 0));
+    lval *sym = lval_pop(formals, 0);
+    // Buid an empty list
+    lval* val = lval_qexpr();
+    lenv_put(func->env, sym, val);
+    lval_del(sym);
+    lval_del(val);
+  }
+  
+  if (formals->count == 0) {
+    func->env->par = e;
+    lval *s = lval_sexpr();
+    s->expr.sexpr = lval_add(get_expr(s), lval_copy(func->body));
+    return builtin_eval(func->env, s);
+  }
+
+  return lval_copy(f);
+  
+    
+}
+
+
 void lval_println(lval* v) {
   lval_print(v);
   putchar('\n');
@@ -517,6 +592,7 @@ void lval_println(lval* v) {
 /* LEnv functions */
 lenv* lenv_new(void) {
   lenv* e = malloc(sizeof(lenv));
+  e->par = NULL;
   e->count = 0;
   e->syms = NULL;
   e->vals = NULL;
@@ -544,6 +620,10 @@ lval* lenv_get(lenv* e, lval *k) {
     }
   }
 
+  if (e->par != NULL) {
+    return lenv_get(e->par, k);
+  }
+
   return lval_err("Unbound symbol '%s'", k->expr.sym);
 }
 
@@ -565,27 +645,60 @@ void lenv_put(lenv* e, lval* k, lval* v) {
     
 }
 
-lval *builtin_def(lenv *e, lval *a) {
+void lenv_def(lenv *e, lval *k, lval* v) {
+  if (e->par == NULL) {
+    lenv_put(e,k,v);
+    return;
+  }
+  lenv_put(e->par, k, v);
+}
+
+lenv* lenv_copy(lenv *e) {
+  lenv *cpy = malloc(sizeof(lenv));
+  cpy->par = e->par;
+  cpy->count = e->count;
+  cpy->syms = malloc(e->count * sizeof(char *));
+  cpy->vals = malloc(e->count * sizeof(lval *));
+  for (int i = 0; i < cpy->count; i++) {
+    cpy->syms[i] = malloc(strlen(e->syms[i]) + 1);
+    strcpy(cpy->syms[i], e->syms[i]);
+    cpy->vals[i] = lval_copy(e->vals[i]);
+  }
+
+  return cpy;
+}
+
+lval *builtin_var(lenv *e, lval *a, char *func, void (*define_env)(lenv*, lval*, lval*)) {
   lqexpr *syms;
   lsexpr *sexpr;
-  
+      
   LASSERT_TYPE("def", a, LVAL_SEXPR);
   LASSERT_ARG_TYPE("def", a, 0, LVAL_QEXPR);  
   sexpr = a->expr.sexpr;
   syms = sexpr->exprs[0]->expr.qexpr;
 
   for( int i = 0; i < syms->count; i++) {
-    LASSERT(a, syms->exprs[i]->type == LVAL_SYM, "Function 'def' cannot define non-symbol");
+    LASSERT(a, syms->exprs[i]->type == LVAL_SYM, "Function '%s' cannot define non-symbol", func);
   }
 
-  LASSERT(a, syms->count == sexpr->count - 1, "Function 'def' cannot define incorrect number of values to symbols");
+  LASSERT(a, syms->count == sexpr->count - 1, "Function '%s' cannot define incorrect number of values to symbols", func);
 
-  for (int i = 0; i < syms->count; i++) {
-    lenv_put(e, syms->exprs[i], sexpr->exprs[i+1]);
+  if (define_env != NULL) {
+    for (int i = 0; i < syms->count; i++) {
+      define_env(e, syms->exprs[i], sexpr->exprs[i+1]);
+    }
   }
 
   lval_del(a);
   return lval_sexpr();
+}
+
+lval *builtin_def(lenv *e, lval *a) {
+  return builtin_var(e, a, "def", lenv_def);
+}
+
+lval *builtin_put(lenv *e, lval *a) {
+  return builtin_var(e, a, "=", lenv_put);
 }
 
 void lenv_add_builtin(lenv *e, char* name, lbuiltin func) {
@@ -613,7 +726,9 @@ void lenv_add_builtins(lenv *e) {
   lenv_add_builtin(e, "/", builtin_div);
 
   /* Variable functions */
+  lenv_add_builtin(e, "\\", builtin_lambda);
   lenv_add_builtin(e, "def", builtin_def);
+  lenv_add_builtin(e, "=", builtin_put);
   
 }
 
@@ -666,7 +781,9 @@ int main(int argc, char **argv) {
     mpc_result_t r;
     if(mpc_parse("<stdin>", input, Lispy, &r)) {
       /* On Success print the AST */
-      lval *x = lval_eval(e, lval_read(r.output));
+      lval *input = lval_read(r.output);
+      lval_println(input);
+      lval *x = lval_eval(e, input);
       lval_println(x);
       lval_del(x);
       mpc_ast_delete(r.output);
