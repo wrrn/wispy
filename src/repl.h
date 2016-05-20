@@ -47,8 +47,9 @@
   
 
 
+
 /* Enumeration of possible lval type */
-typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_FUN, LVAL_BUILTIN, LVAL_SEXPR, LVAL_QEXPR } lval_type;
+typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_FUN, LVAL_BUILTIN, LVAL_SEXPR, LVAL_QEXPR, LVAL_BOOL } lval_type;
 
 struct lval;
 struct lenv;
@@ -125,6 +126,9 @@ lval* lval_fun(lbuiltin func);
 /* Build user defined func */
 lval* lval_lambda(lval* formals, lval* body);
 
+/* Build boolean type */
+lval* lval_bool(double x);
+
 /** End Constructors **/
 
 /** Destructor **/
@@ -172,10 +176,10 @@ lval* builtin(lenv *e, lval* a, char* func);
 lval* builtin_op(lenv *e, lval* v, lsym sym);
 
 /* Builtin mathmatical functions */
-lval *builtin_add(lenv *e, lval *v);
-lval *builtin_sub(lenv *e, lval *v);
-lval *builtin_mul(lenv *e, lval *v);
-lval *builtin_div(lenv *e, lval *v);
+lval* builtin_add(lenv *e, lval *v);
+lval* builtin_sub(lenv *e, lval *v);
+lval* builtin_mul(lenv *e, lval *v);
+lval* builtin_div(lenv *e, lval *v);
 
 /* Builtin list functions */
 lval* builtin_head(lenv *e, lval *v);
@@ -193,6 +197,24 @@ lval* builtin_def(lenv *e, lval *a);
 lval* builtin_lambda(lenv *e, lval *a);
 lval* builtin_put(lenv *e, lval *a);
 lval* lval_call(lenv *e, lval *f, lval *sexpr);
+
+/* Builtin Ordering function */
+lval* builtin_not(lenv*, lval*);
+lval* builtin_eq(lenv*, lval*);
+lval* builtin_not_eq(lenv*, lval*);
+lval* builtin_lt(lenv*, lval*);
+lval* builtin_le(lenv*, lval*);
+lval* builtin_gt(lenv*, lval*);
+lval* builtin_ge(lenv*, lval*);
+lval* builtin_ord(lenv *e, lval *v, char *op, double(*func)(double, double));
+double num_lt(double, double);
+double num_le(double, double);
+double num_gt(double, double);
+double num_ge(double, double);
+double num_eq(double, double);
+double lval_eq(lval*, lval*);
+double expr_eq(lextended_expr*, lextended_expr*);
+  
 
 /* Lenv functions */
 lenv* lenv_new(void);

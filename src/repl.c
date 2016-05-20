@@ -265,6 +265,135 @@ lval* lval_join(lval *x, lval *y) {
 }
 
 
+lval* builtin_ord(lenv *e, lval *v, char *op, double (*func)(double, double)) {
+  LASSERT_EXPR(op, v);
+  LASSERT_NUM(op, v, 2);
+  LASSERT_ARG_TYPE(op, v, 0, LVAL_NUM);
+  LASSERT_ARG_TYPE(op, v, 1, LVAL_NUM);
+  lsexpr *sexpr = get_expr(v);
+  double val = func(sexpr->exprs[0]->expr.num, sexpr->exprs[1]->expr.num);
+  lval_del(v);
+  return lval_bool(val);
+}
+
+
+lval *builtin_lt(lenv *e, lval* v) {
+  return builtin_ord(e, v, "<", num_lt);
+}
+
+double num_lt(double x, double y) {
+  return x < y;
+}
+
+lval *builtin_le(lenv *e, lval* v) {
+  return builtin_ord(e, v, "<=", num_le);
+}
+
+double num_le(double x, double y) {
+  return x <= y;
+}
+
+lval *builtin_gt(lenv *e, lval* v) {
+  return builtin_ord(e, v, ">", num_gt);
+}
+
+double num_gt(double x, double y) {
+  return x > y;
+}
+
+lval *builtin_ge(lenv *e, lval* v) {
+  return builtin_ord(e, v, ">=", num_ge);
+}
+
+double num_ge(double x, double y) {
+  return x >= y;
+}
+
+lval *builtin_not(lenv *e, lval *v) {
+  LASSERT_EXPR("not", v)
+  LASSERT_NUM("not", v, 1);
+  LASSERT_ARG_TYPE("not", v, 1, LVAL_BOOL);
+  double val = get_expr(v)->exprs[0]->expr.num;
+  lval_del(v);
+  return lval_bool(!val);
+  
+}
+
+lval *builtin_eq(lenv* e, lval *v) {
+  LASSERT_EXPR("eq", v);
+  lsexpr *sexpr = get_expr(v);
+  LASSERT_NUM("eq", v, 2);
+  LASSERT_ARG_TYPE("eq", v, 1, sexpr->exprs[0]->type);
+
+  double val = lval_eq(sexpr->exprs[0], sexpr->exprs[1]);
+  lval_del(v);
+
+  return lval_bool(val);
+  
+  
+  
+}
+
+lval* builtin_not_eq(lenv *e, lval *v) {
+  lval *val = builtin_eq(e, v);
+  if (val->type == LVAL_BOOL) {
+    val->expr.num = !val->expr.num;
+  }
+  return val;
+}
+
+double num_eq (double x, double y) {
+  return x == y;
+}
+
+double lval_eq(lval *x, lval *y) {
+  if (x->type != y->type) {
+    return 0;
+  }
+  
+  switch (x->type) {
+  case LVAL_BOOL:
+  case LVAL_NUM:
+    return x->expr.num == y->expr.num;
+    break;
+  case LVAL_ERR:
+    return strcmp(x->expr.err, y->expr.err) == 0;
+    break;
+  case LVAL_SYM:
+    return strcmp(x->expr.sym, y->expr.sym) == 0;
+    break;
+  case LVAL_FUN:
+    return lval_eq(x->expr.func->formals, y->expr.func->formals) == 0
+      && lval_eq(x->expr.func->body, y->expr.func->body);
+    break;
+  case LVAL_BUILTIN:
+    return x->expr.builtin == y->expr.builtin;
+    break;
+  case LVAL_SEXPR:
+  case LVAL_QEXPR:
+    return expr_eq(get_expr(x), get_expr(y));
+  }
+  
+    
+}
+
+double expr_eq(lextended_expr *x, lextended_expr *y) {
+    if (x->count != y->count) {
+      return 0;
+    }
+
+    for (int i = 0; i < x->count; i++) {
+      if (!lval_eq(x->exprs[i], y->exprs[i])) {
+        return 0;
+      }
+    }
+    return 1;    
+  
+}
+
+
+
+
 
 lval* lval_num(double x) {
   lval *v = malloc(sizeof(lval));
@@ -332,6 +461,13 @@ lval* lval_lambda(lval *formals, lval* body) {
   return v;
 }
 
+lval* lval_bool(double x) {
+  lval *v = malloc(sizeof(lval));
+  v->type = LVAL_BOOL;
+  v->expr.num = x;
+  return v;
+}
+
 void lval_expr_del(lextended_expr* expr) {
   for (int i = 0; i < expr->count; i++) {
     free(expr->exprs[i]);
@@ -342,6 +478,7 @@ void lval_expr_del(lextended_expr* expr) {
 
 void lval_del(lval* v) {
   switch (v->type) {
+  case LVAL_BOOL:
   case LVAL_NUM: break;
   case LVAL_ERR:
     free(v->expr.err);
@@ -390,6 +527,7 @@ lval* lval_copy(lval *v) {
     func->body = lval_copy(v->expr.func->body);
     x->expr.func = func;
     break;
+  case LVAL_BOOL:
   case LVAL_NUM:
     x->expr.num = v->expr.num;
     break;
@@ -483,6 +621,9 @@ void lval_expr_print(lextended_expr *expr, char open, char close) {
 
 void lval_print(lval *v) {
   switch (v->type) {
+  case LVAL_BOOL:
+    printf("%s", v->expr.num == 0 ? "false" : "true");
+    break;
   case LVAL_NUM:
     printf("%.4f", v->expr.num);
     break;
@@ -729,6 +870,15 @@ void lenv_add_builtins(lenv *e) {
   lenv_add_builtin(e, "\\", builtin_lambda);
   lenv_add_builtin(e, "def", builtin_def);
   lenv_add_builtin(e, "=", builtin_put);
+
+  /* Ordering function */
+  lenv_add_builtin(e, "<", builtin_lt);
+  lenv_add_builtin(e, "<=", builtin_le);
+  lenv_add_builtin(e, ">", builtin_gt);
+  lenv_add_builtin(e, ">=", builtin_ge);
+  lenv_add_builtin(e, "eq", builtin_eq);
+  lenv_add_builtin(e, "ne", builtin_not_eq);
+  lenv_add_builtin(e, "not", builtin_not);
   
 }
 
