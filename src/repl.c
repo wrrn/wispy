@@ -640,6 +640,7 @@ lval* lval_read(mpc_ast_t *t) {
     if (strcmp(child->contents, ")") == 0) { continue; }
     if (strcmp(child->contents, "{") == 0) { continue; }
     if (strcmp(child->contents, "}") == 0) { continue; }
+    if (strstr(child->tag, "comment")) { continue; }
     if (strcmp(child->tag, "regex") == 0) { continue; }
     
     x->expr.sexpr = lval_add(x->expr.sexpr, lval_read(child));
@@ -964,6 +965,7 @@ int main(int argc, char **argv) {
   mpc_parser_t *Number = mpc_new("number");
   mpc_parser_t *Symbol = mpc_new("symbol");
   mpc_parser_t *String = mpc_new("string");
+  mpc_parser_t *Comment = mpc_new("comment");
   mpc_parser_t *Sexpr = mpc_new("sexpr");
   mpc_parser_t *Qexpr = mpc_new("qexpr");
   mpc_parser_t *Expr = mpc_new("expr");
@@ -971,7 +973,7 @@ int main(int argc, char **argv) {
 
   mpca_lang(MPCA_LANG_DEFAULT,
             LANGDEF,
-            Number, Symbol, String, Sexpr, Qexpr, Expr, Lispy);
+            Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);
 
   
   /* Print Version and Exit information */  
@@ -1013,7 +1015,7 @@ int main(int argc, char **argv) {
     free(input);
   }
   lenv_del(e);
-  mpc_cleanup(6, Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
+  mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);
 
   return 0;
 
