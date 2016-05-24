@@ -49,7 +49,7 @@
 
 
 /* Enumeration of possible lval type */
-typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_FUN, LVAL_BUILTIN, LVAL_SEXPR, LVAL_QEXPR, LVAL_BOOL } lval_type;
+typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_STR, LVAL_FUN, LVAL_BUILTIN, LVAL_SEXPR, LVAL_QEXPR, LVAL_BOOL } lval_type;
 
 struct lval;
 struct lenv;
@@ -57,6 +57,7 @@ typedef struct lval lval;
 typedef struct lenv lenv;
 typedef char * lerr;
 typedef char * lsym;
+typedef char * lstr;
 
 
 
@@ -82,6 +83,7 @@ typedef union lexpr {
   double num;
   lerr err;
   lsym sym;
+  lstr str;
   /* End atom definition */
   lsexpr *sexpr;
   lqexpr *qexpr;
@@ -129,6 +131,9 @@ lval* lval_lambda(lval* formals, lval* body);
 /* Build boolean type */
 lval* lval_bool(double x);
 
+/* Build string type */
+lval* lval_str(char *s);
+
 /** End Constructors **/
 
 /** Destructor **/
@@ -154,10 +159,15 @@ lval *lval_read_num(mpc_ast_t *t);
 /* Read lval */
 lval *lval_read(mpc_ast_t *t);
 
+/* Get a lval string from mpc_ast_t */
+lval *lval_read_str(mpc_ast_t *t);
+
+
 /* Print an lval */
 void lval_expr_print(lextended_expr *expr, char open, char close);
 void lval_print(lval* v);
 void lval_println(lval* v);
+void lval_print_str(char*);
 
 /* Evaluation of Sexpr */
 lval* lval_eval_sexpr(lenv* e, lval* v);
@@ -234,13 +244,14 @@ char *ltype_name(int t);
 
 
 static char const * const LANGDEF =
-  "                                                                     \
-                number : /-?[0-9]+(\\.?[0-9]+)?/ ;                      \
-                symbol : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;             \
-                sexpr  : '(' <expr>* ')' ;                              \
-                qexpr  : '{' <expr>* '}' ;                              \
-                expr   : <number> | <symbol> | <sexpr> | <qexpr> ;      \
-                lispy  : /^/ <expr>* /$/ ;                              \
+  "                                                                               \
+                number : /-?[0-9]+(\\.?[0-9]+)?/ ;                                \
+                symbol : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;                       \
+                string : /\"(\\\\.|[^\"])*\"/ ;                                   \
+                sexpr  : '(' <expr>* ')' ;                                        \
+                qexpr  : '{' <expr>* '}' ;                                        \
+                expr   : <number> | <symbol> | <sexpr> | <qexpr> | <string> ;     \
+                lispy  : /^/ <expr>* /$/ ;                                        \
   ";
 
 #endif
