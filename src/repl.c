@@ -3,7 +3,7 @@
 
 lval* lval_eval_sexpr(lenv* e, lval* v) {
   LASSERT_TYPE("lval_eval_sexpr", v, LVAL_SEXPR)
-  lsexpr* s = v->expr.sexpr;
+    lsexpr* s = v->expr.sexpr;
 
   for (int i = 0; i < s->count; i++) {
     s->exprs[i] = lval_eval(e, s->exprs[i]);
@@ -237,12 +237,12 @@ lval* builtin_lambda(lenv *e, lval *a){
   LASSERT_ARG_TYPE("\\", a, 1, LVAL_QEXPR);
   lextended_expr *expr = get_expr(a);
   lextended_expr *symbols_list = get_expr(expr->exprs[0]);
-    for (int i = 0; i < symbols_list->count; i++) {
-      int val_type = symbols_list->exprs[i]->type;
-      LASSERT(a, val_type == LVAL_SYM,
-              "Cannot define non-symbol. Got %s, expected %s",
-              ltype_name(val_type), ltype_name(LVAL_SYM));
-    }
+  for (int i = 0; i < symbols_list->count; i++) {
+    int val_type = symbols_list->exprs[i]->type;
+    LASSERT(a, val_type == LVAL_SYM,
+            "Cannot define non-symbol. Got %s, expected %s",
+            ltype_name(val_type), ltype_name(LVAL_SYM));
+  }
 
   lval* formals = lval_pop(expr, 0);
   lval* body = lval_pop(expr, 0);
@@ -311,7 +311,7 @@ double num_ge(double x, double y) {
 
 lval *builtin_not(lenv *e, lval *v) {
   LASSERT_EXPR("not", v)
-  LASSERT_NUM("not", v, 1);
+    LASSERT_NUM("not", v, 1);
   LASSERT_ARG_TYPE("not", v, 1, LVAL_BOOL);
   double val = get_expr(v)->exprs[0]->expr.num;
   lval_del(v);
@@ -381,16 +381,16 @@ double lval_eq(lval *x, lval *y) {
 }
 
 double expr_eq(lextended_expr *x, lextended_expr *y) {
-    if (x->count != y->count) {
+  if (x->count != y->count) {
+    return 0;
+  }
+
+  for (int i = 0; i < x->count; i++) {
+    if (!lval_eq(x->exprs[i], y->exprs[i])) {
       return 0;
     }
-
-    for (int i = 0; i < x->count; i++) {
-      if (!lval_eq(x->exprs[i], y->exprs[i])) {
-        return 0;
-      }
-    }
-    return 1;    
+  }
+  return 1;    
   
 }
 
@@ -414,6 +414,44 @@ lval* builtin_if(lenv *e, lval *v) {
   lval_del(v);
 
   return val;
+}
+
+
+lval *builtin_load(lenv *e, lval *v) {
+  LASSERT_EXPR("load", v);
+  LASSERT_ARG_TYPE("load", v, 0, LVAL_STR);
+  mpc_result_t r;
+  lsexpr *sexpr = get_expr(v);
+  lval *value;
+  if (mpc_parse_contents(sexpr->exprs[0]->expr.str, Lispy, &r)) {
+    lval *vexpr = lval_read(r.output);
+    mpc_ast_delete(r.output);
+    lsexpr *expr = get_expr(vexpr);
+    /* Evaluate each expression */
+    while (expr->count) {
+      lval *x = lval_eval(e, lval_pop(expr, 0));
+      if (x->type == LVAL_ERR) {
+        lval_println(x);
+      }
+      lval_del(x);
+    }
+    lval_del(vexpr);
+
+    value = lval_sexpr();
+    
+  } else {
+    char *err_msg = mpc_err_string(r.error);
+    mpc_err_delete(r.error);
+    lval *err = lval_err("Could not load Library %s", err_msg);
+    free(err_msg);
+
+    value = err;
+  }
+
+  lval_del(v);
+  return value;
+     
+  
 }
 
 lval* lval_num(double x) {
@@ -740,8 +778,8 @@ lval *lval_call(lenv *e, lval *f, lval *sexpr) {
     /* Niladic parameter */
     if(strcmp(sym->expr.sym, "&") == 0) {
       LASSERT(sexpr, formals->count == 1,
-                  "Function format invalid"
-                  "Symbol '&' not followd by single symbol.");
+              "Function format invalid"
+              "Symbol '&' not followd by single symbol.");
       lval *nsym = lval_pop(formals, 0);
       lenv_put(func->env, nsym, builtin_list(e, sexpr));
       lval_del(sym);
@@ -962,14 +1000,14 @@ char *ltype_name(int t) {
 int main(int argc, char **argv) {
 
   /* Create some parsers */
-  mpc_parser_t *Number = mpc_new("number");
-  mpc_parser_t *Symbol = mpc_new("symbol");
-  mpc_parser_t *String = mpc_new("string");
-  mpc_parser_t *Comment = mpc_new("comment");
-  mpc_parser_t *Sexpr = mpc_new("sexpr");
-  mpc_parser_t *Qexpr = mpc_new("qexpr");
-  mpc_parser_t *Expr = mpc_new("expr");
-  mpc_parser_t *Lispy = mpc_new("lispy");
+  Number = mpc_new("number");
+  Symbol = mpc_new("symbol");
+  String = mpc_new("string");
+  Comment = mpc_new("comment");
+  Sexpr = mpc_new("sexpr");
+  Qexpr = mpc_new("qexpr");
+  Expr = mpc_new("expr");
+  Lispy = mpc_new("lispy");
 
   mpca_lang(MPCA_LANG_DEFAULT,
             LANGDEF,
@@ -983,36 +1021,51 @@ int main(int argc, char **argv) {
 
   lenv* e = lenv_new();
   lenv_add_builtins(e);
-  /*In a never ending loop */
-  while(1) {
 
-    /*Output our prompt and get input */
-    char *input = readline("wispy> ");
+  if (argc == 1) {
+    /*In a never ending loop */
+    while(1) {
 
-    /* Add input to history */
-    add_history(input);
+      /*Output our prompt and get input */
+      char *input = readline("wispy> ");
+
+      /* Add input to history */
+      add_history(input);
 
       
-    /* Attempt to Parse the user Input */
-    mpc_result_t r;
-    if(mpc_parse("<stdin>", input, Lispy, &r)) {
-      /* On Success print the AST */
-      lval *input = lval_read(r.output);
-      lval_println(input);
-      lval *x = lval_eval(e, input);
-      lval_println(x);
-      lval_del(x);
-      mpc_ast_delete(r.output);
-    } else {
-      /* Otherwise print error */
-      printf("Error");
-      mpc_err_print(r.error);
-      mpc_err_delete(r.error);
-    }
+      /* Attempt to Parse the user Input */
+      mpc_result_t r;
+      if(mpc_parse("<stdin>", input, Lispy, &r)) {
+        /* On Success print the AST */
+        lval *input = lval_read(r.output);
+        lval_println(input);
+        lval *x = lval_eval(e, input);
+        lval_println(x);
+        lval_del(x);
+        mpc_ast_delete(r.output);
+      } else {
+        /* Otherwise print error */
+        printf("Error");
+        mpc_err_print(r.error);
+        mpc_err_delete(r.error);
+      }
     
 
-    /* Free retrieved input */
-    free(input);
+      /* Free retrieved input */
+      free(input);
+    }
+  }
+
+  if (argc >= 2) {
+    for (int i = 1; i < argc; i++) {
+      lval *args = lval_sexpr();
+      args->expr.sexpr = lval_add(get_expr(args), lval_str(argv[i]));
+      lval *x = builtin_load(e, args);
+      if (x->type == LVAL_ERR) {
+        lval_println(x);
+      }
+      lval_del(x);
+    }
   }
   lenv_del(e);
   mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lispy);

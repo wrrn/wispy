@@ -224,6 +224,9 @@ double num_ge(double, double);
 double num_eq(double, double);
 double lval_eq(lval*, lval*);
 double expr_eq(lextended_expr*, lextended_expr*);
+
+/* File loading function */
+lval *builtin_load(lenv*, lval*);
   
 
 /* Lenv functions */
@@ -241,6 +244,15 @@ void lenv_add_builtins(lenv *e);
 /* Debugging/Error Utilities */
 char *ltype_name(int t);
 
+
+mpc_parser_t *Number;
+mpc_parser_t *Symbol;
+mpc_parser_t *String;
+mpc_parser_t *Comment;
+mpc_parser_t *Sexpr;
+mpc_parser_t *Qexpr;
+mpc_parser_t *Expr;
+mpc_parser_t *Lispy;
 
 
 static char const * const LANGDEF =
