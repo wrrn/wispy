@@ -1028,27 +1028,32 @@ int main(int argc, char **argv) {
 
       /*Output our prompt and get input */
       char *input = readline("wispy> ");
+      if (input == NULL) {
+        printf("\n");
+        break;
+      }
 
-      /* Add input to history */
-      add_history(input);
+        /* Add input to history */
+        add_history(input);
 
       
-      /* Attempt to Parse the user Input */
-      mpc_result_t r;
-      if(mpc_parse("<stdin>", input, Lispy, &r)) {
-        /* On Success print the AST */
-        lval *input = lval_read(r.output);
-        lval_println(input);
-        lval *x = lval_eval(e, input);
-        lval_println(x);
-        lval_del(x);
-        mpc_ast_delete(r.output);
-      } else {
-        /* Otherwise print error */
-        printf("Error");
-        mpc_err_print(r.error);
-        mpc_err_delete(r.error);
-      }
+        /* Attempt to Parse the user Input */
+        mpc_result_t r;
+        if(mpc_parse("<stdin>", input, Lispy, &r)) {
+          /* On Success print the AST */
+          lval *input = lval_read(r.output);
+          lval_println(input);
+          lval *x = lval_eval(e, input);
+          lval_println(x);
+          lval_del(x);
+          mpc_ast_delete(r.output);
+        } else {
+          /* Otherwise print error */
+          printf("Error");
+          mpc_err_print(r.error);
+          mpc_err_delete(r.error);
+        }
+      
     
 
       /* Free retrieved input */
