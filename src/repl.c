@@ -454,6 +454,27 @@ lval *builtin_load(lenv *e, lval *v) {
   
 }
 
+lval *builtin_print(lenv *e, lval *v) {
+  LASSERT_EXPR("print", v);
+  lsexpr *sexpr = get_expr(v);
+  for (int i = 0; i < sexpr->count; i++) {
+    lval_print(sexpr->exprs[i]);
+    putchar(' ');
+  }
+  putchar('\n');
+  lval_del(v);
+  return lval_sexpr();
+}
+
+lval *builtin_err(lenv *e, lval *v) {
+  LASSERT_EXPR("err", v);
+  LASSERT_NUM("err", v, 1);
+  LASSERT_ARG_TYPE("err", v, 0, LVAL_STR);
+  lval *err = lval_err(get_expr(v)->exprs[0]->expr.str);
+  lval_del(v);
+  return err;
+}
+
 lval* lval_num(double x) {
   lval *v = malloc(sizeof(lval));
   v->type = LVAL_NUM;
@@ -980,6 +1001,9 @@ void lenv_add_builtins(lenv *e) {
   lenv_add_builtin(e, "ne", builtin_not_eq);
   lenv_add_builtin(e, "not", builtin_not);
   lenv_add_builtin(e, "if", builtin_if);
+  lenv_add_builtin(e, "load", builtin_load);
+  lenv_add_builtin(e, "print", builtin_print);
+  lenv_add_builtin(e, "error", builtin_err);
   
 }
 
@@ -1035,14 +1059,12 @@ int main(int argc, char **argv) {
 
         /* Add input to history */
         add_history(input);
-
-      
         /* Attempt to Parse the user Input */
         mpc_result_t r;
         if(mpc_parse("<stdin>", input, Lispy, &r)) {
           /* On Success print the AST */
+
           lval *input = lval_read(r.output);
-          lval_println(input);
           lval *x = lval_eval(e, input);
           lval_println(x);
           lval_del(x);

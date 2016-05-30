@@ -207,6 +207,8 @@ lval* builtin_def(lenv *e, lval *a);
 lval* builtin_lambda(lenv *e, lval *a);
 lval* builtin_put(lenv *e, lval *a);
 lval* lval_call(lenv *e, lval *f, lval *sexpr);
+lval *buitlint_print(lenv*, lval*);
+lval *builtin_err(lenv*, lval*);
 
 /* Builtin Ordering function */
 lval* builtin_not(lenv*, lval*);
