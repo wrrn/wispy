@@ -29,7 +29,8 @@
   LASSERT(args, args->type == LVAL_SEXPR || args->type == LVAL_QEXPR,           \
           "Function '%s' passed incorrect type. "                               \
           "Expected %s or %s, but got %s",                                      \
-          ltype_name(LVAL_SEXPR), ltype_name(LVAL_QEXPR),ltype_name(args->type));                                    
+          ltype_name(LVAL_SEXPR), ltype_name(LVAL_QEXPR),ltype_name(args->type));
+
 
 #define LASSERT_NUM(func, args, num)                            \
   LASSERT(args, get_expr(args)->count == num,                   \
@@ -43,6 +44,7 @@
           "Expected %s, but got %s",                                 \
           func, argnum, ltype_name(expected),                        \
           ltype_name(get_expr(args)->exprs[argnum]->type));
+
 
   
 
@@ -193,7 +195,11 @@ lval* builtin_div(lenv *e, lval *v);
 
 /* Builtin list functions */
 lval* builtin_head(lenv *e, lval *v);
+lval* qexpr_head(lval*);
+lval* str_head(lval*);
 lval* builtin_tail(lenv *e,lval *v);
+lval* qexpr_tail(lval *v);
+lval* str_tail(lval *v);
 lval* builtin_list(lenv *e,lval *v);
 lval* builtin_eval(lenv *e, lval *v);
 lval* builtin_join(lenv *e, lval* v);

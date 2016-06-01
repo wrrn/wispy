@@ -134,10 +134,22 @@ lval* builtin_div(lenv* e, lval* a) {
 lval* builtin_head(lenv *e, lval *a) {
   LASSERT_EXPR("builtin_head", a);
   LASSERT_NUM("head", a, 1);
-  LASSERT_ARG_TYPE("head", a, 0, LVAL_QEXPR);
-  LASSERT(a, get_expr(a)->exprs[0]->expr.qexpr->count != 0, "Function 'head' passed {}!");
+  LASSERT(a, get_expr(a)->exprs[0]->type ==  LVAL_QEXPR
+          || get_expr(a)->exprs[0]->type == LVAL_STR,
+          "Function 'head' passed illegal argument %d. "
+          "Expected %s or %s, but got %s",
+          0, ltype_name(LVAL_QEXPR), ltype_name(LVAL_STR),
+          ltype_name(get_expr(a)->exprs[0]->type));
 
+  lval* (*head_func) (lval*) = get_expr(a)->exprs[0]->type == LVAL_STR ? str_head : qexpr_head;
   lval* v = lval_take(a, 0);
+  return head_func(v);
+}
+
+lval* qexpr_head(lval *v) {
+  LASSERT(v, v->expr.qexpr->count != 0, "Function 'head' passed {}!");
+
+
   lqexpr* qexpr = v->expr.qexpr;
   while (qexpr->count > 1 ) {
     lval_del(lval_pop(qexpr, 1));
@@ -145,18 +157,45 @@ lval* builtin_head(lenv *e, lval *a) {
   return v;
 }
 
+lval* str_head(lval *a) {
+  LASSERT(a, strlen(a->expr.str) != 0, "Function 'head' passed \"\"");
+  char *buff = calloc(2, sizeof(char));
+  strncpy(buff, a->expr.str, 1);
+  free(a->expr.str);
+  a->expr.str = buff;
+  return a;
+}
+
+
 
 lval* builtin_tail(lenv *e, lval *a) {
   LASSERT_EXPR("tail", a);
   LASSERT_NUM("tail", a, 1);
-  LASSERT_ARG_TYPE("tail",a, 0, LVAL_QEXPR);
-  LASSERT(a, get_expr(a)->exprs[0]->expr.qexpr->count != 0, "Function 'tail' passed {}!");
+  LASSERT(a, get_expr(a)->exprs[0]->type ==  LVAL_QEXPR
+          || get_expr(a)->exprs[0]->type == LVAL_STR,
+          "Function 'tail' passed illegal argument %d. "
+          "Expected %s or %s, but got %s",
+          0, ltype_name(LVAL_QEXPR), ltype_name(LVAL_STR),
+          ltype_name(get_expr(a)->exprs[0]->type));
 
+  lval* (*tail_func) (lval*) = get_expr(a)->exprs[0]->type == LVAL_STR ? str_tail : qexpr_tail;
   lval* v = lval_take(a, 0);
-  lval_del(lval_pop(v->expr.qexpr,0));
-  return v;
+  
+  return tail_func(v);
  
   
+}
+
+lval* qexpr_tail(lval *v) {
+  LASSERT(v, v->expr.qexpr->count != 0, "Function 'tail' passed {}!");
+  lval_del(lval_pop(v->expr.qexpr,0));
+  return v;
+}
+
+lval* str_tail(lval *v) {
+  LASSERT(v, strlen(v->expr.str) != 0, "Function 'tail' passed \"\"");
+  memmove(v->expr.str, v->expr.str + 1, strlen(v->expr.str));
+  return v;
 }
 
 lval* builtin_list(lenv *e, lval *a) {
@@ -1081,24 +1120,24 @@ int main(int argc, char **argv) {
         break;
       }
 
-        /* Add input to history */
-        add_history(input);
-        /* Attempt to Parse the user Input */
-        mpc_result_t r;
-        if(mpc_parse("<stdin>", input, Lispy, &r)) {
-          /* On Success print the AST */
+      /* Add input to history */
+      add_history(input);
+      /* Attempt to Parse the user Input */
+      mpc_result_t r;
+      if(mpc_parse("<stdin>", input, Lispy, &r)) {
+        /* On Success print the AST */
 
-          lval *input = lval_read(r.output);
-          lval *x = lval_eval(e, input);
-          lval_println(x);
-          lval_del(x);
-          mpc_ast_delete(r.output);
-        } else {
-          /* Otherwise print error */
-          printf("Error");
-          mpc_err_print(r.error);
-          mpc_err_delete(r.error);
-        }
+        lval *input = lval_read(r.output);
+        lval *x = lval_eval(e, input);
+        lval_println(x);
+        lval_del(x);
+        mpc_ast_delete(r.output);
+      } else {
+        /* Otherwise print error */
+        printf("Error");
+        mpc_err_print(r.error);
+        mpc_err_delete(r.error);
+      }
       
     
 
