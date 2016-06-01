@@ -217,17 +217,41 @@ lval* builtin_join(lenv *e, lval* a) {
   lextended_expr* expr;
   LASSERT_EXPR("join", a);
   expr = get_expr(a);
-  for (int i = 0; i < expr->count; i++) {
-    LASSERT_ARG_TYPE("join", a, i, LVAL_QEXPR);
+  
+
+  for (int i = 1; i < expr->count; i++) {
+    LASSERT(a, expr->exprs[i]->type == LVAL_QEXPR
+            || expr->exprs[i]->type == LVAL_STR,
+            "Function 'join' passed incorrect type. "
+            "Expected %s or %s, but got %s",
+            ltype_name(LVAL_QEXPR),
+            ltype_name(LVAL_STR),
+            ltype_name(expr->exprs[i]->type));
+    
+    LASSERT_ARG_TYPE("join", a, i, expr->exprs[i-1]->type);
   }
 
   lval* x = lval_pop(expr, 0);
+  
+
+
+  lval *(*join_func) (lval*, lval*) = x->type == LVAL_STR ? str_join : lval_join;
   while ( expr->count ) {
-    x = lval_join(x, lval_pop(expr, 0));
+    x = join_func(x, lval_pop(expr, 0));
   }
 
   lval_del(a);
   return x;
+}
+
+lval *str_join(lval *x , lval *y) {
+  size_t x_len = strlen(x->expr.str);
+  x->expr.str = realloc(x->expr.str, x_len + strlen(y->expr.str) + 1);
+  strcpy(x->expr.str + x_len, y->expr.str);
+  lval_del(y);
+
+  return x;
+  
 }
 
 lval* builtin_lambda(lenv *e, lval *a){

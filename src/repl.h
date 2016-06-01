@@ -18,10 +18,10 @@
     return err;                                 \
   }
 
-#define LASSERT_TYPE( func, arg, expected)                 \
+#define LASSERT_TYPE( func, arg, expected)                  \
   LASSERT(arg, arg->type == expected,                       \
           "Function '%s' passed incorrect type. "           \
-          "Got %s, expected %s.",                           \
+          "Expected %s, but got %s.",                       \
           func,                                             \
           ltype_name(arg->type), ltype_name(expected))
 
@@ -37,11 +37,11 @@
           "Expected %d, but got %d",                            \
           num, get_expr(args)->count);
 
-#define LASSERT_ARG_TYPE(func, args, argnum, expected)              \
-  LASSERT(args, get_expr(args)->exprs[argnum]->type == expected,    \
-          "Function '%s' passed illegal argument %d"                \
-          "Expected %s, but go %s",                                 \
-          func, argnum, ltype_name(expected),                       \
+#define LASSERT_ARG_TYPE(func, args, argnum, expected)               \
+  LASSERT(args, get_expr(args)->exprs[argnum]->type == expected,     \
+          "Function '%s' passed illegal argument %d. "               \
+          "Expected %s, but got %s",                                 \
+          func, argnum, ltype_name(expected),                        \
           ltype_name(get_expr(args)->exprs[argnum]->type));
 
   
@@ -198,6 +198,7 @@ lval* builtin_list(lenv *e,lval *v);
 lval* builtin_eval(lenv *e, lval *v);
 lval* builtin_join(lenv *e, lval* v);
 lval* lval_join(lval* x, lval* y);
+lval* str_join(lval*, lval*);
 lval* builtin_cons(lenv *e, lval *a);
 lval* builtin_init(lenv *e, lval *a);
 lval* builtin_len(lenv *e, lval *a);
