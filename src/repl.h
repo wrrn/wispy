@@ -51,7 +51,7 @@
 
 
 /* Enumeration of possible lval type */
-typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_STR, LVAL_FUN, LVAL_BUILTIN, LVAL_SEXPR, LVAL_QEXPR, LVAL_BOOL } lval_type;
+typedef enum { LVAL_ERR, LVAL_NUM, LVAL_SYM, LVAL_STR, LVAL_FUN, LVAL_BUILTIN, LVAL_SEXPR, LVAL_QEXPR, LVAL_BOOL, LVAL_OK } lval_type;
 
 struct lval;
 struct lenv;
@@ -135,6 +135,9 @@ lval* lval_bool(double x);
 
 /* Build string type */
 lval* lval_str(char *s);
+
+/* Build OK type */
+lval* lval_ok();
 
 /** End Constructors **/
 

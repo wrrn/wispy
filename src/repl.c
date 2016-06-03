@@ -415,6 +415,8 @@ double lval_eq(lval *x, lval *y) {
   }
   
   switch (x->type) {
+  case LVAL_OK:
+    return 1;
   case LVAL_BOOL:
   case LVAL_NUM:
     return x->expr.num == y->expr.num;
@@ -526,7 +528,7 @@ lval *builtin_print(lenv *e, lval *v) {
   }
   putchar('\n');
   lval_del(v);
-  return lval_sexpr();
+  return lval_ok();
 }
 
 lval *builtin_err(lenv *e, lval *v) {
@@ -619,6 +621,12 @@ lval* lval_str(char *s) {
   return v;
 }
 
+lval *lval_ok() {
+  lval *v = malloc(sizeof(lval));
+  v->type = LVAL_OK;
+  return v;
+}
+
 void lval_expr_del(lextended_expr* expr) {
   for (int i = 0; i < expr->count; i++) {
     free(expr->exprs[i]);
@@ -630,6 +638,7 @@ void lval_expr_del(lextended_expr* expr) {
 void lval_del(lval* v) {
   switch (v->type) {
   case LVAL_BOOL:
+  case LVAL_OK:
   case LVAL_NUM: break;
   case LVAL_ERR:
     free(v->expr.err);
@@ -671,6 +680,8 @@ lval* lval_copy(lval *v) {
   x->type = v->type;
   
   switch (v->type) {
+  case LVAL_OK:
+    break;
   case LVAL_BUILTIN:
     x->expr.builtin = v->expr.builtin;
     break;
@@ -794,6 +805,8 @@ void lval_expr_print(lextended_expr *expr, char open, char close) {
 
 void lval_print(lval *v) {
   switch (v->type) {
+  case LVAL_OK:
+    break;
   case LVAL_BOOL:
     printf("%s", v->expr.num == 0 ? "false" : "true");
     break;
@@ -1080,6 +1093,9 @@ char *ltype_name(int t) {
   case LVAL_STR: return "String";
   case LVAL_SEXPR: return "S-Expression";
   case LVAL_QEXPR: return "Q-Expression";
+  case LVAL_BOOL: return "Bool";
+  case LVAL_OK: return "OK";
+  case LVAL_ERR: return "Error";
   default: return "Unknown";
   }
 }
