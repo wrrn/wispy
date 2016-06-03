@@ -540,6 +540,18 @@ lval *builtin_err(lenv *e, lval *v) {
   return err;
 }
 
+lval *builtin_show(lenv *e, lval *v) {
+  LASSERT_EXPR("print", v);
+  LASSERT_NUM("print", v, 1);
+  LASSERT_ARG_TYPE("print", v, 0, LVAL_STR);
+  printf("%s\n",get_expr(v)->exprs[0]->expr.str);
+  lval_del(v);
+  return lval_ok();
+
+}
+
+
+
 lval* lval_num(double x) {
   lval *v = malloc(sizeof(lval));
   v->type = LVAL_NUM;
@@ -1079,6 +1091,7 @@ void lenv_add_builtins(lenv *e) {
   lenv_add_builtin(e, "if", builtin_if);
   lenv_add_builtin(e, "load", builtin_load);
   lenv_add_builtin(e, "print", builtin_print);
+  lenv_add_builtin(e, "show", builtin_show);
   lenv_add_builtin(e, "error", builtin_err);
   
 }
