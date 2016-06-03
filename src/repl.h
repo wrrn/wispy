@@ -241,6 +241,9 @@ double expr_eq(lextended_expr*, lextended_expr*);
 
 /* File loading function */
 lval *builtin_load(lenv*, lval*);
+
+/* String to Qexpr */
+lval* builtin_read(lenv*, lval*);
   
 
 /* Lenv functions */

@@ -519,6 +519,28 @@ lval *builtin_load(lenv *e, lval *v) {
   
 }
 
+lval *builtin_read(lenv *e, lval *v) {
+  LASSERT_EXPR("read", v);
+  LASSERT_NUM("read", v, 1);
+  LASSERT_ARG_TYPE("read", v, 0, LVAL_STR);
+  mpc_result_t r;
+  char *input = get_expr(v)->exprs[0]->expr.str;
+  lval *value;
+  if (mpc_parse("input", input, Lispy, &r)) {
+    value = lval_read(r.output);
+    mpc_ast_delete(r.output);
+    value = builtin_list(e, value);
+  } else {
+    char *err_msg = mpc_err_string(r.error);
+    mpc_err_delete(r.error);
+    value = lval_err("Could not read %s", err_msg);
+  }
+
+  lval_del(v);
+  return value;
+  
+}
+
 lval *builtin_print(lenv *e, lval *v) {
   LASSERT_EXPR("print", v);
   lsexpr *sexpr = get_expr(v);
@@ -1093,6 +1115,7 @@ void lenv_add_builtins(lenv *e) {
   lenv_add_builtin(e, "print", builtin_print);
   lenv_add_builtin(e, "show", builtin_show);
   lenv_add_builtin(e, "error", builtin_err);
+  lenv_add_builtin(e, "read", builtin_read);
   
 }
 
