@@ -29,14 +29,14 @@
   LASSERT(args, args->type == LVAL_SEXPR || args->type == LVAL_QEXPR,           \
           "Function '%s' passed incorrect type. "                               \
           "Expected %s or %s, but got %s",                                      \
-          ltype_name(LVAL_SEXPR), ltype_name(LVAL_QEXPR),ltype_name(args->type));
+          func, ltype_name(LVAL_SEXPR), ltype_name(LVAL_QEXPR),ltype_name(args->type))
 
 
 #define LASSERT_NUM(func, args, num)                            \
   LASSERT(args, get_expr(args)->count == num,                   \
           "Function '%s' passed incorrect number of arguments." \
           "Expected %d, but got %d",                            \
-          num, get_expr(args)->count);
+          func, num, get_expr(args)->count);
 
 #define LASSERT_ARG_TYPE(func, args, argnum, expected)               \
   LASSERT(args, get_expr(args)->exprs[argnum]->type == expected,     \
